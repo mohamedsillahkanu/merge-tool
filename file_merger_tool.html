@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart File Merger - Key-Based Merging Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #e1effe;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0f1629 25%, #1a237e 75%, #1565c0 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .main-header {
+            text-align: center;
+            padding: 3rem 0;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 25%, #1e3a8a 75%, #2563eb 100%);
+            color: white;
+            margin-bottom: 2rem;
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.3);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .main-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        .main-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .upload-section {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 2px dashed #2563eb;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 12px 40px rgba(37, 99, 235, 0.2);
+        }
+
+        .upload-section.file-loaded {
+            border-color: #10b981;
+            border-style: solid;
+        }
+
+        .upload-section h3 {
+            color: #93c5fd;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .file-input {
+            margin: 1rem 0;
+            padding: 12px 16px;
+            border: 2px solid #1e40af;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.9);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #e1effe;
+            width: 100%;
+            display: block;
+        }
+        
+        .file-input::-webkit-file-upload-button {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 12px;
+            font-weight: 600;
+        }
+
+        .file-input:hover {
+            border-color: #2563eb;
+            background: rgba(15, 23, 42, 1);
+        }
+
+        .file-info {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .file-info h4 {
+            color: #34d399;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(29, 78, 216, 0.4);
+        }
+
+        .btn:disabled {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        }
+
+        .section {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            margin: 2rem 0;
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .section h2 {
+            color: #93c5fd;
+            margin-bottom: 1.5rem;
+        }
+
+        .column-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .column-group h4 {
+            color: #93c5fd;
+            margin-bottom: 1rem;
+        }
+
+        .column-checkbox {
+            background: rgba(10, 14, 26, 0.6);
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border: 1px solid rgba(30, 64, 175, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .column-checkbox:hover {
+            background: rgba(30, 64, 175, 0.2);
+            border-color: rgba(37, 99, 235, 0.5);
+        }
+
+        .column-checkbox input[type="checkbox"] {
+            margin-right: 0.75rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .column-checkbox input[type="radio"] {
+            margin-right: 0.75rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .column-checkbox label {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .merge-config {
+            background: rgba(30, 64, 175, 0.1);
+            border: 2px solid rgba(37, 99, 235, 0.3);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+        }
+
+        .merge-type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .merge-type-option {
+            background: rgba(10, 14, 26, 0.6);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 2px solid rgba(30, 64, 175, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .merge-type-option:hover {
+            border-color: rgba(37, 99, 235, 0.5);
+            background: rgba(30, 64, 175, 0.2);
+        }
+
+        .merge-type-option.selected {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .merge-type-option input[type="radio"] {
+            display: none;
+        }
+
+        .merge-type-option h5 {
+            color: #93c5fd;
+            margin-bottom: 0.5rem;
+        }
+
+        .merge-type-option p {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            border-top: 3px solid #2563eb;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(37, 99, 235, 0.3);
+        }
+
+        .stats-card h3 {
+            font-size: 2rem;
+            color: #93c5fd;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .stats-card p {
+            color: #6b7280;
+        }
+
+        .stats-card.matched {
+            border-top-color: #10b981;
+        }
+
+        .stats-card.matched h3 {
+            color: #34d399;
+        }
+
+        .stats-card.unmatched {
+            border-top-color: #f59e0b;
+        }
+
+        .stats-card.unmatched h3 {
+            color: #fbbf24;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%);
+            backdrop-filter: blur(15px);
+            color: #34d399;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .warning-message {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%);
+            backdrop-filter: blur(15px);
+            color: #fbbf24;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(185, 28, 28, 0.2) 100%);
+            backdrop-filter: blur(15px);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(37, 99, 235, 0.2);
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .download-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .download-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            backdrop-filter: blur(15px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .download-card h4 {
+            color: #93c5fd;
+            margin-bottom: 1rem;
+        }
+
+        .preview-table {
+            max-height: 300px;
+            overflow: auto;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid rgba(30, 64, 175, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(30, 64, 175, 0.3);
+            color: #93c5fd;
+            padding: 0.75rem;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(30, 64, 175, 0.2);
+        }
+
+        tr:hover {
+            background: rgba(30, 64, 175, 0.1);
+        }
+
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(37, 99, 235, 0.2);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.8) 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        }
+
+        @media (max-width: 768px) {
+            .upload-grid, .column-selector, .download-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-header">
+        <div class="container">
+            <h1>🔗 Smart File Merger</h1>
+            <p>Merge two files based on selected key columns with matched/unmatched separation</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- File Upload Section -->
+        <div class="upload-grid">
+            <div class="upload-section" id="uploadSection1">
+                <h3>📁 File 1 (Primary)</h3>
+                <p>Upload your first file</p>
+                <input type="file" id="file1Input" class="file-input" accept=".csv,.xlsx,.xls">
+                <div id="file1Info" class="hidden"></div>
+            </div>
+
+            <div class="upload-section" id="uploadSection2">
+                <h3>📁 File 2 (Secondary)</h3>
+                <p>Upload your second file</p>
+                <input type="file" id="file2Input" class="file-input" accept=".csv,.xlsx,.xls">
+                <div id="file2Info" class="hidden"></div>
+            </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p id="loadingText">Processing files...</p>
+        </div>
+
+        <!-- Column Selection Section -->
+        <div id="columnSelection" class="section hidden">
+            <h2>🔑 Select Merge Keys</h2>
+            <p style="color: #9ca3af; margin-bottom: 1.5rem;">
+                Select the columns to use as merge keys. The merger will match rows where these columns have the same values.
+            </p>
+            
+            <div class="column-selector">
+                <div class="column-group">
+                    <h4>File 1 Columns</h4>
+                    <div id="file1Columns"></div>
+                </div>
+                <div class="column-group">
+                    <h4>File 2 Columns</h4>
+                    <div id="file2Columns"></div>
+                </div>
+            </div>
+
+            <div class="merge-config">
+                <h3 style="color: #93c5fd; margin-bottom: 1rem;">Merge Configuration</h3>
+                
+                <div>
+                    <h4 style="color: #93c5fd; margin-bottom: 0.5rem;">Merge Type</h4>
+                    <div class="merge-type-selector">
+                        <div class="merge-type-option selected" data-type="inner">
+                            <input type="radio" name="mergeType" value="inner" id="innerJoin" checked>
+                            <label for="innerJoin">
+                                <h5>Inner Join</h5>
+                                <p>Only matched records in both files</p>
+                            </label>
+                        </div>
+                        <div class="merge-type-option" data-type="left">
+                            <input type="radio" name="mergeType" value="left" id="leftJoin">
+                            <label for="leftJoin">
+                                <h5>Left Join</h5>
+                                <p>All File 1 + matched File 2</p>
+                            </label>
+                        </div>
+                        <div class="merge-type-option" data-type="outer">
+                            <input type="radio" name="mergeType" value="outer" id="outerJoin">
+                            <label for="outerJoin">
+                                <h5>Full Outer Join</h5>
+                                <p>All records from both files</p>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="mergeBtn" class="btn btn-success" disabled>🔗 Merge Files</button>
+                <button id="resetBtn" class="btn btn-secondary">🔄 Reset & Upload New Files</button>
+            </div>
+        </div>
+
+        <!-- Merge Results Section -->
+        <div id="mergeResults" class="section hidden">
+            <h2>✅ Merge Results</h2>
+            
+            <div id="mergeStats" class="stats-grid"></div>
+
+            <div id="messageContainer"></div>
+
+            <div class="download-section">
+                <div class="download-card">
+                    <h4>📥 Matched Records</h4>
+                    <p style="color: #9ca3af; margin-bottom: 1rem;">
+                        Records that matched between both files
+                    </p>
+                    <div id="matchedPreview"></div>
+                    <button id="downloadMatchedBtn" class="btn btn-success">Download Matched CSV</button>
+                </div>
+
+                <div class="download-card">
+                    <h4>📥 Unmatched Records</h4>
+                    <p style="color: #9ca3af; margin-bottom: 1rem;">
+                        Records that didn't match between files
+                    </p>
+                    <div id="unmatchedPreview"></div>
+                    <button id="downloadUnmatchedBtn" class="btn btn-secondary">Download Unmatched CSV</button>
+                </div>
+
+                <div class="download-card">
+                    <h4>📥 Combined Output</h4>
+                    <p style="color: #9ca3af; margin-bottom: 1rem;">
+                        All records in a single file
+                    </p>
+                    <div id="combinedStats"></div>
+                    <button id="downloadCombinedBtn" class="btn">Download Combined CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Section -->
+        <div id="instructionsSection" class="section">
+            <h2>📖 How to Use This Tool</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 1.5rem;">
+                <div>
+                    <h3 style="color: #93c5fd; margin-bottom: 1rem;">1️⃣ Upload Files</h3>
+                    <ul style="margin-left: 2rem; color: #cbd5e1;">
+                        <li>Upload two CSV, XLSX, or XLS files</li>
+                        <li>Files can have different structures</li>
+                        <li>Data is automatically cleaned</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: #93c5fd; margin-bottom: 1rem;">2️⃣ Select Merge Keys</h3>
+                    <ul style="margin-left: 2rem; color: #cbd5e1;">
+                        <li>Choose one or more columns from each file</li>
+                        <li>Selected columns will be used to match rows</li>
+                        <li>Match is based on exact values</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: #93c5fd; margin-bottom: 1rem;">3️⃣ Choose Merge Type</h3>
+                    <ul style="margin-left: 2rem; color: #cbd5e1;">
+                        <li><strong>Inner:</strong> Only matched rows</li>
+                        <li><strong>Left:</strong> All File 1 + matched File 2</li>
+                        <li><strong>Outer:</strong> All rows from both files</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: #93c5fd; margin-bottom: 1rem;">4️⃣ Download Results</h3>
+                    <ul style="margin-left: 2rem; color: #cbd5e1;">
+                        <li>Matched records in one file</li>
+                        <li>Unmatched records in another</li>
+                        <li>Or download combined output</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Smart File Merger v1.0 | Key-Based Merging with Match/Unmatch Separation</p>
+    </div>
+
+    <script>
+        class FileMerger {
+            constructor() {
+                this.file1Data = null;
+                this.file2Data = null;
+                this.file1Keys = [];
+                this.file2Keys = [];
+                this.mergeType = 'inner';
+                this.mergeResults = {
+                    matched: [],
+                    unmatched: [],
+                    combined: []
+                };
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('file1Input').addEventListener('change', (e) => this.handleFileUpload(e, 1));
+                document.getElementById('file2Input').addEventListener('change', (e) => this.handleFileUpload(e, 2));
+                document.getElementById('mergeBtn').addEventListener('click', () => this.performMerge());
+                document.getElementById('resetBtn').addEventListener('click', () => this.resetApplication());
+                document.getElementById('downloadMatchedBtn').addEventListener('click', () => this.downloadData('matched'));
+                document.getElementById('downloadUnmatchedBtn').addEventListener('click', () => this.downloadData('unmatched'));
+                document.getElementById('downloadCombinedBtn').addEventListener('click', () => this.downloadData('combined'));
+
+                // Merge type selection
+                document.querySelectorAll('.merge-type-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.merge-type-option').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        const radio = option.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        this.mergeType = radio.value;
+                    });
+                });
+            }
+
+            async handleFileUpload(event, fileNumber) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.showLoading(true, `Processing File ${fileNumber}...`);
+
+                try {
+                    const data = await this.readFile(file);
+                    
+                    if (fileNumber === 1) {
+                        this.file1Data = data;
+                        this.displayFileInfo(file, data, 1);
+                        document.getElementById('uploadSection1').classList.add('file-loaded');
+                    } else {
+                        this.file2Data = data;
+                        this.displayFileInfo(file, data, 2);
+                        document.getElementById('uploadSection2').classList.add('file-loaded');
+                    }
+
+                    if (this.file1Data && this.file2Data) {
+                        this.displayColumnSelection();
+                        this.hideElement('instructionsSection');
+                    }
+                } catch (error) {
+                    this.showError(`Error reading File ${fileNumber}: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async readFile(file) {
+                return new Promise((resolve, reject) => {
+                    const fileExtension = file.name.toLowerCase().split('.').pop();
+                    const reader = new FileReader();
+
+                    reader.onload = (e) => {
+                        try {
+                            let data;
+
+                            if (fileExtension === 'csv') {
+                                const csvText = e.target.result;
+                                const parsed = Papa.parse(csvText, {
+                                    header: true,
+                                    skipEmptyLines: true,
+                                    dynamicTyping: true
+                                });
+                                data = parsed.data;
+                            } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+                                const workbook = XLSX.read(e.target.result, { type: 'array' });
+                                const firstSheetName = workbook.SheetNames[0];
+                                const worksheet = workbook.Sheets[firstSheetName];
+                                data = XLSX.utils.sheet_to_json(worksheet);
+                            } else {
+                                reject(new Error(`Unsupported file type: ${fileExtension}`));
+                                return;
+                            }
+
+                            // Clean the data
+                            const cleanedData = this.cleanData(data, file.name);
+                            
+                            resolve({
+                                name: file.name,
+                                data: cleanedData,
+                                columns: Object.keys(cleanedData[0] || {}),
+                                rowCount: cleanedData.length
+                            });
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+
+                    reader.onerror = () => reject(new Error(`Error reading file`));
+
+                    if (fileExtension === 'csv') {
+                        reader.readAsText(file);
+                    } else {
+                        reader.readAsArrayBuffer(file);
+                    }
+                });
+            }
+
+            cleanData(data, filename) {
+                if (!data || data.length === 0) return [];
+
+                // Remove rows with empty first column
+                const firstColumnKey = Object.keys(data[0] || {})[0];
+                let cleaned = data.filter(row => {
+                    const firstValue = row[firstColumnKey];
+                    return firstValue !== null && firstValue !== undefined && 
+                           String(firstValue).trim() !== '';
+                });
+
+                // Remove unnamed columns and clean column names
+                cleaned = cleaned.map(row => {
+                    const cleanRow = {};
+                    Object.keys(row).forEach(key => {
+                        const cleanKey = String(key).trim();
+                        if (!cleanKey.toLowerCase().startsWith('unnamed') && 
+                            cleanKey !== 'null' && cleanKey !== '') {
+                            cleanRow[cleanKey] = row[key];
+                        }
+                    });
+                    return cleanRow;
+                });
+
+                // Remove completely empty rows
+                cleaned = cleaned.filter(row => {
+                    return Object.values(row).some(value => 
+                        value !== null && value !== undefined && String(value).trim() !== ''
+                    );
+                });
+
+                return cleaned;
+            }
+
+            displayFileInfo(file, data, fileNumber) {
+                const infoDiv = document.getElementById(`file${fileNumber}Info`);
+                infoDiv.innerHTML = `
+                    <div class="file-info">
+                        <h4>✅ ${file.name}</h4>
+                        <p><strong>Rows:</strong> ${data.rowCount}</p>
+                        <p><strong>Columns:</strong> ${data.columns.length}</p>
+                        <p style="font-size: 0.85rem; margin-top: 0.5rem;"><strong>Columns:</strong> ${data.columns.slice(0, 5).join(', ')}${data.columns.length > 5 ? '...' : ''}</p>
+                    </div>
+                `;
+                infoDiv.classList.remove('hidden');
+            }
+
+            displayColumnSelection() {
+                const file1ColumnsDiv = document.getElementById('file1Columns');
+                const file2ColumnsDiv = document.getElementById('file2Columns');
+
+                // Display File 1 columns
+                file1ColumnsDiv.innerHTML = this.file1Data.columns.map(col => `
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="file1_${col}" value="${col}" 
+                               onchange="fileMerger.updateSelectedKeys(1, '${col}', this.checked)">
+                        <label for="file1_${col}">${col}</label>
+                    </div>
+                `).join('');
+
+                // Display File 2 columns
+                file2ColumnsDiv.innerHTML = this.file2Data.columns.map(col => `
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="file2_${col}" value="${col}"
+                               onchange="fileMerger.updateSelectedKeys(2, '${col}', this.checked)">
+                        <label for="file2_${col}">${col}</label>
+                    </div>
+                `).join('');
+
+                this.showElement('columnSelection');
+            }
+
+            updateSelectedKeys(fileNumber, column, checked) {
+                if (fileNumber === 1) {
+                    if (checked) {
+                        this.file1Keys.push(column);
+                    } else {
+                        this.file1Keys = this.file1Keys.filter(k => k !== column);
+                    }
+                } else {
+                    if (checked) {
+                        this.file2Keys.push(column);
+                    } else {
+                        this.file2Keys = this.file2Keys.filter(k => k !== column);
+                    }
+                }
+
+                // Enable merge button if both have at least one key selected
+                const mergeBtn = document.getElementById('mergeBtn');
+                mergeBtn.disabled = !(this.file1Keys.length > 0 && this.file2Keys.length > 0);
+            }
+
+            performMerge() {
+                if (this.file1Keys.length === 0 || this.file2Keys.length === 0) {
+                    this.showError('Please select at least one merge key from each file');
+                    return;
+                }
+
+                if (this.file1Keys.length !== this.file2Keys.length) {
+                    this.showWarning('Warning: Different number of keys selected. Will use minimum number of keys.');
+                }
+
+                this.showLoading(true, 'Performing merge operation...');
+
+                try {
+                    const minKeyLength = Math.min(this.file1Keys.length, this.file2Keys.length);
+                    const keysToUse1 = this.file1Keys.slice(0, minKeyLength);
+                    const keysToUse2 = this.file2Keys.slice(0, minKeyLength);
+
+                    // Create lookup maps
+                    const file2Map = new Map();
+                    this.file2Data.data.forEach((row, index) => {
+                        const key = keysToUse2.map(k => String(row[k] || '').trim()).join('||');
+                        if (!file2Map.has(key)) {
+                            file2Map.set(key, []);
+                        }
+                        file2Map.get(key).push({...row, _originalIndex: index});
+                    });
+
+                    const matched = [];
+                    const unmatchedFile1 = [];
+                    const matchedFile2Indices = new Set();
+
+                    // Process File 1 rows
+                    this.file1Data.data.forEach((row1) => {
+                        const key = keysToUse1.map(k => String(row1[k] || '').trim()).join('||');
+                        const matchingRows = file2Map.get(key);
+
+                        if (matchingRows && matchingRows.length > 0) {
+                            // Match found
+                            matchingRows.forEach(row2 => {
+                                const mergedRow = {
+                                    ...row1,
+                                    ...row2,
+                                    _source_file1: this.file1Data.name,
+                                    _source_file2: this.file2Data.name,
+                                    _match_status: 'matched'
+                                };
+                                delete mergedRow._originalIndex;
+                                matched.push(mergedRow);
+                                matchedFile2Indices.add(row2._originalIndex);
+                            });
+                        } else {
+                            // No match found in File 2
+                            if (this.mergeType === 'left' || this.mergeType === 'outer') {
+                                unmatchedFile1.push({
+                                    ...row1,
+                                    _source_file1: this.file1Data.name,
+                                    _source_file2: '',
+                                    _match_status: 'unmatched_file1'
+                                });
+                            }
+                        }
+                    });
+
+                    // Process unmatched File 2 rows
+                    const unmatchedFile2 = [];
+                    if (this.mergeType === 'outer') {
+                        this.file2Data.data.forEach((row, index) => {
+                            if (!matchedFile2Indices.has(index)) {
+                                unmatchedFile2.push({
+                                    ...row,
+                                    _source_file1: '',
+                                    _source_file2: this.file2Data.name,
+                                    _match_status: 'unmatched_file2'
+                                });
+                            }
+                        });
+                    }
+
+                    // Combine results
+                    const allUnmatched = [...unmatchedFile1, ...unmatchedFile2];
+                    const combined = [...matched, ...allUnmatched];
+
+                    this.mergeResults = {
+                        matched: matched,
+                        unmatched: allUnmatched,
+                        combined: combined
+                    };
+
+                    this.displayMergeResults();
+                    this.showSuccess(`Merge completed! Found ${matched.length} matched records and ${allUnmatched.length} unmatched records.`);
+                } catch (error) {
+                    this.showError('Error during merge: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            displayMergeResults() {
+                const statsDiv = document.getElementById('mergeStats');
+                const { matched, unmatched, combined } = this.mergeResults;
+
+                statsDiv.innerHTML = `
+                    <div class="stats-card matched">
+                        <h3>${matched.length}</h3>
+                        <p>Matched Records</p>
+                    </div>
+                    <div class="stats-card unmatched">
+                        <h3>${unmatched.length}</h3>
+                        <p>Unmatched Records</p>
+                    </div>
+                    <div class="stats-card">
+                        <h3>${combined.length}</h3>
+                        <p>Total Records</p>
+                    </div>
+                    <div class="stats-card">
+                        <h3>${Object.keys(combined[0] || {}).length}</h3>
+                        <p>Total Columns</p>
+                    </div>
+                `;
+
+                // Display previews
+                this.displayPreview('matched', matched);
+                this.displayPreview('unmatched', unmatched);
+                
+                const combinedStats = document.getElementById('combinedStats');
+                combinedStats.innerHTML = `
+                    <p style="text-align: left;"><strong>Matched:</strong> ${matched.length} rows</p>
+                    <p style="text-align: left;"><strong>Unmatched:</strong> ${unmatched.length} rows</p>
+                    <p style="text-align: left;"><strong>Total:</strong> ${combined.length} rows</p>
+                `;
+
+                this.showElement('mergeResults');
+            }
+
+            displayPreview(type, data) {
+                const previewDiv = document.getElementById(`${type}Preview`);
+                
+                if (data.length === 0) {
+                    previewDiv.innerHTML = `<p style="color: #9ca3af;">No ${type} records</p>`;
+                    return;
+                }
+
+                const preview = data.slice(0, 5);
+                const columns = Object.keys(preview[0]);
+
+                let tableHTML = `
+                    <div class="preview-table">
+                        <table>
+                            <thead>
+                                <tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>
+                                ${preview.map(row => `
+                                    <tr>${columns.map(col => `<td>${row[col] || ''}</td>`).join('')}</tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="color: #9ca3af; margin-top: 0.5rem; font-size: 0.85rem;">
+                        Showing ${preview.length} of ${data.length} records
+                    </p>
+                `;
+
+                previewDiv.innerHTML = tableHTML;
+            }
+
+            downloadData(type) {
+                const data = this.mergeResults[type];
+                if (!data || data.length === 0) {
+                    this.showWarning(`No ${type} data to download`);
+                    return;
+                }
+
+                const csv = this.convertToCSV(data);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '').replace('T', '_');
+                const filename = `${type}_records_${timestamp}.csv`;
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                this.showSuccess(`Downloaded ${type} records (${data.length} rows)`);
+            }
+
+            convertToCSV(data) {
+                if (!data || data.length === 0) return '';
+                
+                const headers = Object.keys(data[0]);
+                const csvRows = [headers.join(',')];
+                
+                data.forEach(row => {
+                    const values = headers.map(header => {
+                        let value = row[header] || '';
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                            value = '"' + value.replace(/"/g, '""') + '"';
+                        }
+                        return value;
+                    });
+                    csvRows.push(values.join(','));
+                });
+                
+                return csvRows.join('\n');
+            }
+
+            resetApplication() {
+                this.file1Data = null;
+                this.file2Data = null;
+                this.file1Keys = [];
+                this.file2Keys = [];
+                this.mergeType = 'inner';
+                this.mergeResults = { matched: [], unmatched: [], combined: [] };
+                
+                document.getElementById('file1Input').value = '';
+                document.getElementById('file2Input').value = '';
+                document.getElementById('file1Info').classList.add('hidden');
+                document.getElementById('file2Info').classList.add('hidden');
+                document.getElementById('uploadSection1').classList.remove('file-loaded');
+                document.getElementById('uploadSection2').classList.remove('file-loaded');
+                
+                this.hideElement('columnSelection');
+                this.hideElement('mergeResults');
+                this.showElement('instructionsSection');
+                
+                // Clear messages
+                document.querySelectorAll('.success-message, .error-message, .warning-message').forEach(msg => msg.remove());
+            }
+
+            showLoading(show, message = 'Processing...') {
+                const loadingDiv = document.getElementById('loading');
+                if (show) {
+                    document.getElementById('loadingText').textContent = message;
+                    loadingDiv.classList.remove('hidden');
+                } else {
+                    loadingDiv.classList.add('hidden');
+                }
+            }
+
+            showElement(id) {
+                document.getElementById(id).classList.remove('hidden');
+            }
+
+            hideElement(id) {
+                document.getElementById(id).classList.add('hidden');
+            }
+
+            showSuccess(message) {
+                this.showMessage(message, 'success-message');
+            }
+
+            showError(message) {
+                this.showMessage(message, 'error-message');
+            }
+
+            showWarning(message) {
+                this.showMessage(message, 'warning-message');
+            }
+
+            showMessage(message, className) {
+                const existingMessages = document.querySelectorAll('.success-message, .error-message, .warning-message');
+                existingMessages.forEach(msg => msg.remove());
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = className;
+                messageDiv.textContent = message;
+                
+                const messageContainer = document.getElementById('messageContainer') || document.querySelector('.container');
+                messageContainer.appendChild(messageDiv);
+                
+                if (className === 'success-message') {
+                    setTimeout(() => {
+                        if (messageDiv.parentNode) {
+                            messageDiv.parentNode.removeChild(messageDiv);
+                        }
+                    }, 5000);
+                }
+            }
+        }
+
+        // Initialize the application
+        let fileMerger;
+        document.addEventListener('DOMContentLoaded', () => {
+            fileMerger = new FileMerger();
+        });
+    </script>
+</body>
+</html>
